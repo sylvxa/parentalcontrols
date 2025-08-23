@@ -14,7 +14,7 @@ Adds a server-side per-player time limit.
 
 ## Usage
 
-The default time limit is 8 hours (`minutesAllowed: 480`). Players receive a warning message when their remaining time drops to the configured threshold (default: 5 minutes, configurable via `warning_threshold_seconds`). Those, along with some other settings, can be changed in the `config/parentalcontrols.json` file. Settings can be reloaded on the fly with an operator-only command ([see below](#commands)). 
+The default time limit is 8 hours (`minutes_allowed: 480`). Players receive a warning message when their remaining time drops to the configured threshold (`warning_threshold_seconds: 300` or 5 minutes). Those, along with some other settings, can be changed in the `config/parentalcontrols.json` file. Settings can be reloaded on the fly with an operator-only command ([see below](#commands)). 
 
 ### Time Stacking
 
@@ -25,4 +25,4 @@ The time remaining is internally counted per-tick, but checks are performed ever
 
 - `/parental remaining`: As a player, query your time remaining
 - `/parental reload`: (Operator-only) Reload the configuration file
-- `/parental status`: (Operator-only) Show time stacking status and each player's accumulated time
+- `/parental stacking`: (Operator-only) Show time stacking status and each player's accumulated time

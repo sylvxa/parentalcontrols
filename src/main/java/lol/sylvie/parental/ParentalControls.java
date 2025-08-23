@@ -2,13 +2,11 @@ package lol.sylvie.parental;
 
 import lol.sylvie.parental.command.ParentalControlsCommand;
 import lol.sylvie.parental.config.Configuration;
+import lol.sylvie.parental.util.Formatting;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerLoginConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerLoginNetworkHandler;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -37,16 +35,14 @@ public class ParentalControls implements ModInitializer {
     private int tickCounter = 0;
 
     public static void updateTimeConstants() {
-        ticksPerCheck = (int) (Configuration.INSTANCE.checkIntervalTicks);
-        warningThresholdInTicks = (int) (Configuration.INSTANCE.warningThresholdSeconds * ticksPerCheck);
+        ticksPerCheck = Configuration.INSTANCE.checkIntervalTicks;
+        warningThresholdInTicks = Configuration.INSTANCE.warningThresholdSeconds * ticksPerCheck;
         dailyMinutesAllowedInTicks = (int) (Configuration.INSTANCE.minutesAllowed * 60 * ticksPerCheck);
         maxAccumulableHoursInTicks = (int) (Configuration.INSTANCE.maxStackedHours * 60 * 60 * ticksPerCheck);
     }
 
     public static void loadAccumulatedTicksFromConfig() {
-        Configuration.INSTANCE.playerAccumulatedTicks.forEach((playerId, ticks) -> {
-            accumulatedTicks.put(playerId, ticks);
-        });
+        accumulatedTicks.putAll(Configuration.INSTANCE.playerAccumulatedTicks);
     }
 
     public static int ticksRemaining(UUID player) {
@@ -71,7 +67,7 @@ public class ParentalControls implements ModInitializer {
                 ticksToConsume -= remainingDaily;
             }
             
-            if (ticksToConsume > 0 && accumulated > 0) {
+            if (accumulated > 0) {
                 int stackedToConsume = Math.min(ticksToConsume, accumulated);
                 accumulatedTicks.put(playerId, accumulated - stackedToConsume);
             }
@@ -91,23 +87,9 @@ public class ParentalControls implements ModInitializer {
         int remaining = ticksRemaining(playerId);
         
         if (remaining <= warningThresholdInTicks && remaining > 0) {
-            int remainingSeconds = warningThresholdInTicks / ticksPerCheck;
-            int minutesLeft = remainingSeconds / 60;
-            int secondsLeft = remainingSeconds % 60;
-            
-            String timeMessage;
-            if (minutesLeft > 0) {
-                if (secondsLeft > 0) {
-                    timeMessage = minutesLeft + " minute" + (minutesLeft == 1 ? "" : "s") + 
-                                 " and " + secondsLeft + " second" + (secondsLeft == 1 ? "" : "s");
-                } else {
-                    timeMessage = minutesLeft + " minute" + (minutesLeft == 1 ? "" : "s");
-                }
-            } else {
-                timeMessage = secondsLeft + " second" + (secondsLeft == 1 ? "" : "s");
-            }
-            
+            String timeMessage = Formatting.ticksAsWords(warningThresholdInTicks);
             String warningMessage = Configuration.INSTANCE.warningMessage.replace("%time%", timeMessage);
+
             player.sendMessage(Text.literal(warningMessage), false);
             playersWarned.add(playerId);
         }
@@ -139,8 +121,6 @@ public class ParentalControls implements ModInitializer {
                 ArrayList<ServerPlayNetworkHandler> choppingBlock = new ArrayList<>(); // Avoids a concurrent modification error
                 for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                     UUID uuid = player.getUuid();
-                    int usedToday = ticksUsedToday.getOrDefault(uuid, 0);
-
                     if (!canPlayerJoin(player)) {
                         choppingBlock.add(player.networkHandler);
                     } else {
