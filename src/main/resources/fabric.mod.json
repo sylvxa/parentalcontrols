@@ -4,8 +4,21 @@
   "version": "${version}",
   "name": "parentalcontrols",
   "description": "Adds a server-side per-player time limit.",
-  "authors": [],
-  "contact": {},
+  "authors": [
+    {
+      "name": "sylvxa",
+      "contact": {
+        "email": "me@sylvie.lol",
+        "homepage": "https://sylvie.lol"
+      }
+    }
+  ],
+  "contact": {
+    "repo": "https://github.com/sylvxa/parentalcontrols",
+    "homepage": "https://modrinth.com/project/parentalcontrols",
+    "issues": "https://github.com/sylvxa/parentalcontrols/issues",
+    "discord": "https://discord.gg/5qzrB98sBA"
+  },
   "license": "MIT",
   "icon": "assets/parentalcontrols/icon.png",
   "environment": "*",
