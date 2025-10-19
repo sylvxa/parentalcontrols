@@ -36,9 +36,9 @@ public class ParentalControls implements ModInitializer {
 
     public static void updateTimeConstants() {
         ticksPerCheck = Configuration.INSTANCE.checkIntervalTicks;
-        warningThresholdInTicks = Configuration.INSTANCE.warningThresholdSeconds * ticksPerCheck;
-        dailyMinutesAllowedInTicks = (int) (Configuration.INSTANCE.minutesAllowed * 60 * ticksPerCheck);
-        maxAccumulableHoursInTicks = (int) (Configuration.INSTANCE.maxStackedHours * 60 * 60 * ticksPerCheck);
+        warningThresholdInTicks = Configuration.INSTANCE.warningThresholdSeconds * 20;
+        dailyMinutesAllowedInTicks = (int) (Configuration.INSTANCE.minutesAllowed * 60 * 20);
+        maxAccumulableHoursInTicks = (int) (Configuration.INSTANCE.maxStackedHours * 60 * 60 * 20);
     }
 
     public static void loadAccumulatedTicksFromConfig() {
@@ -87,7 +87,7 @@ public class ParentalControls implements ModInitializer {
         int remaining = ticksRemaining(playerId);
         
         if (remaining <= warningThresholdInTicks && remaining > 0) {
-            String timeMessage = Formatting.ticksAsWords(warningThresholdInTicks);
+            String timeMessage = Formatting.ticksAsWords(remaining);
             String warningMessage = Configuration.INSTANCE.warningMessage.replace("%time%", timeMessage);
 
             player.sendMessage(Text.literal(warningMessage), false);
