@@ -32,7 +32,7 @@
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "fabric": "*",
-    "minecraft": ">=1.21.9"
+    "fabric-api": "*",
+    "minecraft": ">=${minecraft_version}"
   }
 }

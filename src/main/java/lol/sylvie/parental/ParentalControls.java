@@ -7,9 +7,11 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.Permissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,13 +76,13 @@ public class ParentalControls implements ModInitializer {
         }
     }
 
-    private static void checkAndWarnPlayer(ServerPlayerEntity player) {
-        UUID playerId = player.getUuid();
+    private static void checkAndWarnPlayer(ServerPlayer player) {
+        UUID playerId = player.getUUID();
         
         if (playersWarned.contains(playerId)) {
             return;
         }
-        if (player.hasPermissionLevel(4) && Configuration.INSTANCE.excludeOperators) {
+        if (player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) && Configuration.INSTANCE.excludeOperators) {
             return;
         }
 
@@ -90,17 +92,17 @@ public class ParentalControls implements ModInitializer {
             String timeMessage = Formatting.ticksAsWords(remaining);
             String warningMessage = Configuration.INSTANCE.warningMessage.replace("%time%", timeMessage);
 
-            player.sendMessage(Text.literal(warningMessage), false);
+            player.displayClientMessage(Component.literal(warningMessage), false);
             playersWarned.add(playerId);
         }
     }
 
-    public static boolean canPlayerJoin(ServerPlayerEntity player) {
-        return ticksRemaining(player.getUuid()) > 0 || player.hasPermissionLevel(4) && Configuration.INSTANCE.excludeOperators;
+    public static boolean canPlayerJoin(ServerPlayer player) {
+        return ticksRemaining(player.getUUID()) > 0 || player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) && Configuration.INSTANCE.excludeOperators;
     }
 
-    private static void disconnect(ServerPlayNetworkHandler handler) {
-        handler.disconnect(Text.literal(Configuration.INSTANCE.disconnectMessage));
+    private static void disconnect(ServerGamePacketListenerImpl handler) {
+        handler.disconnect(Component.literal(Configuration.INSTANCE.disconnectMessage));
     }
 
     @Override
@@ -118,11 +120,11 @@ public class ParentalControls implements ModInitializer {
                 if (midnightPassed) 
                     handleDayTransition();
 
-                ArrayList<ServerPlayNetworkHandler> choppingBlock = new ArrayList<>(); // Avoids a concurrent modification error
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                    UUID uuid = player.getUuid();
+                ArrayList<ServerGamePacketListenerImpl> choppingBlock = new ArrayList<>(); // Avoids a concurrent modification error
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    UUID uuid = player.getUUID();
                     if (!canPlayerJoin(player)) {
-                        choppingBlock.add(player.networkHandler);
+                        choppingBlock.add(player.connection);
                     } else {
                         consumeTime(uuid, ticksPerCheck);
                         checkAndWarnPlayer(player);

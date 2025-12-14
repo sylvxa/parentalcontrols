@@ -5,30 +5,31 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import lol.sylvie.parental.ParentalControls;
 import lol.sylvie.parental.config.Configuration;
 import lol.sylvie.parental.util.Formatting;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import java.util.UUID;
 
 public class ParentalControlsCommand {
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher,
-                                CommandRegistryAccess registryAccess,
-                                CommandManager.RegistrationEnvironment environment) {
-        LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal("parental");
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher,
+                                CommandBuildContext registryAccess,
+                                Commands.CommandSelection environment) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("parental");
 
-        root.then(CommandManager.literal("remaining").executes(ctx -> {
-            ServerCommandSource source = ctx.getSource();
+        root.then(Commands.literal("remaining").executes(ctx -> {
+            CommandSourceStack source = ctx.getSource();
 
-            ServerPlayerEntity player = source.getPlayerOrThrow();
-            if (player.hasPermissionLevel(4) && Configuration.INSTANCE.excludeOperators) {
-                source.sendError(Text.literal("You are immune to the time limit."));
+            ServerPlayer player = source.getPlayerOrException();
+            if (player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) && Configuration.INSTANCE.excludeOperators) {
+                source.sendFailure(Component.literal("You are immune to the time limit."));
                 return 0;
             }
 
-            UUID playerId = player.getUuid();
+            UUID playerId = player.getUUID();
             int ticksRemaining = ParentalControls.ticksRemaining(playerId);
             String formatted = Formatting.ticksAsHours(ticksRemaining);
             StringBuilder message = new StringBuilder("You have §l" + formatted + "§r remaining.");
@@ -40,39 +41,39 @@ public class ParentalControlsCommand {
                 message.append("\n§7Stacked: §f").append(accumulatedFormatted);
             }
 
-            source.sendMessage(Text.literal(message.toString()));
+            source.sendSystemMessage(Component.literal(message.toString()));
             return 1;
         }));
 
-        root.then(CommandManager.literal("reload").requires(s -> s.hasPermissionLevel(4)).executes(ctx -> {
-            ServerCommandSource source = ctx.getSource();
+        root.then(Commands.literal("reload").requires(s -> s.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)).executes(ctx -> {
+            CommandSourceStack source = ctx.getSource();
             if (Configuration.load()) {
-                source.sendFeedback(() -> Text.literal("§aSuccessfully reloaded!"), true);
+                source.sendSuccess(() -> Component.literal("§aSuccessfully reloaded!"), true);
             } else {
-                source.sendError(Text.literal("There was an error while trying to load the configuration! Check console for details."));
+                source.sendFailure(Component.literal("There was an error while trying to load the configuration! Check console for details."));
             }
             return 1;
         }));
 
-        root.then(CommandManager.literal("stacking").requires(s -> s.hasPermissionLevel(4)).executes(ctx -> {
-            ServerCommandSource source = ctx.getSource();
+        root.then(Commands.literal("stacking").requires(s -> s.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)).executes(ctx -> {
+            CommandSourceStack source = ctx.getSource();
             
             if (!Configuration.INSTANCE.allowTimeStacking) {
-                source.sendMessage(Text.literal("§eTime stacking is disabled."));
+                source.sendSystemMessage(Component.literal("§eTime stacking is disabled."));
                 return 1;
             }
             
-            source.sendMessage(Text.literal("§6=== Time Stacking ==="));
-            source.sendMessage(Text.literal("§7Time stacking: §aEnabled"));
-            source.sendMessage(Text.literal("§7Max stacked: §f" + Configuration.INSTANCE.maxStackedHours + " hours"));
+            source.sendSystemMessage(Component.literal("§6=== Time Stacking ==="));
+            source.sendSystemMessage(Component.literal("§7Time stacking: §aEnabled"));
+            source.sendSystemMessage(Component.literal("§7Max stacked: §f" + Configuration.INSTANCE.maxStackedHours + " hours"));
 
             if (ParentalControls.accumulatedTicks.isEmpty()) {
-                source.sendMessage(Text.literal("§7No players have accumulated time."));
+                source.sendSystemMessage(Component.literal("§7No players have accumulated time."));
             } else {
-                source.sendMessage(Text.literal("§7Players with stacked time:"));
+                source.sendSystemMessage(Component.literal("§7Players with stacked time:"));
                 ParentalControls.accumulatedTicks.forEach((playerId, ticks) -> {
                     String formatted = Formatting.ticksAsHours(ticks);
-                    source.sendMessage(Text.literal("§f" + playerId + "§7: §a" + formatted));
+                    source.sendSystemMessage(Component.literal("§f" + playerId + "§7: §a" + formatted));
                 });
             }
             
