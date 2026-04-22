@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.Permissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +91,7 @@ public class ParentalControls implements ModInitializer {
             String timeMessage = Formatting.ticksAsWords(remaining);
             String warningMessage = Configuration.INSTANCE.warningMessage.replace("%time%", timeMessage);
 
-            player.displayClientMessage(Component.literal(warningMessage), false);
+            player.sendOverlayMessage(Component.literal(warningMessage));
             playersWarned.add(playerId);
         }
     }
