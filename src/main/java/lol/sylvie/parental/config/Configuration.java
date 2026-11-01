@@ -4,12 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 import lol.sylvie.parental.ParentalControls;
 import net.fabricmc.loader.api.FabricLoader;
 
-import java.io.*;
-import java.lang.reflect.Type;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,16 +40,17 @@ public class Configuration {
     public static boolean load() {
         try (FileReader reader = new FileReader(FILE)) {
             Configuration parsed = GSON.fromJson(reader, Configuration.class);
-            if (parsed == null) return false;
-            INSTANCE = parsed;
+            if (parsed == null) {
+                return false;
+            }
 
+            INSTANCE = parsed;
             if (INSTANCE.playerAccumulatedTicks == null) {
                 INSTANCE.playerAccumulatedTicks = new HashMap<>();
             }
 
             ParentalControls.updateTimeConstants();
             ParentalControls.loadAccumulatedTicksFromConfig();
-
             return true;
         } catch (FileNotFoundException exception) {
             ParentalControls.LOGGER.warn("Configuration file not found.");
@@ -59,7 +62,6 @@ public class Configuration {
         return false;
     }
 
-    // Actual settings
     @SerializedName("minutes_allowed")
     public float minutesAllowed = 60 * 8;
 
@@ -74,16 +76,25 @@ public class Configuration {
 
     @SerializedName("allow_time_stacking")
     public boolean allowTimeStacking = false;
-    
+
     @SerializedName("max_stacked_hours")
     public float maxStackedHours = 24.0f;
 
     @SerializedName("warning_threshold_seconds")
     public int warningThresholdSeconds = 300;
 
+    @SerializedName("second_warning_enabled")
+    public boolean secondWarningEnabled = false;
+
+    @SerializedName("second_warning_message")
+    public String secondWarningMessage = "§c⚠ Last warning: You have %time% remaining before you're disconnected!";
+
+    @SerializedName("second_warning_threshold_seconds")
+    public int secondWarningThresholdSeconds = 180;
+
     @SerializedName("check_interval_ticks")
     public int checkIntervalTicks = 20;
-    
+
     @SerializedName("player_accumulated_ticks")
     public Map<UUID, Integer> playerAccumulatedTicks = new HashMap<>();
 }
